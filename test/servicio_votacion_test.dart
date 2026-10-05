@@ -134,6 +134,59 @@ void main() {
     expect(resultado, ResultadoVoto.exitoso);
   });
 
+  // RETO — Reloj inyectado
+  group('con un reloj inyectado', () {
+    final cierre = DateTime(2026, 1, 10, 18, 0);
+
+    test('un minuto despues del cierre ya no se puede votar', () {
+      final votacion = _crearVotacionDePrueba(fechaCierre: cierre);
+      final servicio = ServicioVotacion(
+        votacion,
+        reloj: () => cierre.add(const Duration(minutes: 1)),
+      );
+
+      final resultado = servicio.registrarVoto(idUsuario: 'user1', idOpcion: 'op1');
+
+      expect(resultado, ResultadoVoto.votacionCerrada);
+      expect(votacion.opciones[0].votos, 0);
+    });
+
+    test('un minuto antes del cierre el voto se registra', () {
+      final votacion = _crearVotacionDePrueba(fechaCierre: cierre);
+      final servicio = ServicioVotacion(
+        votacion,
+        reloj: () => cierre.subtract(const Duration(minutes: 1)),
+      );
+
+      final resultado = servicio.registrarVoto(idUsuario: 'user1', idOpcion: 'op1');
+
+      expect(resultado, ResultadoVoto.exitoso);
+    });
+
+    test('justo en el instante del cierre todavia se puede votar', () {
+      final votacion = _crearVotacionDePrueba(fechaCierre: cierre);
+      final servicio = ServicioVotacion(votacion, reloj: () => cierre);
+
+      final resultado = servicio.registrarVoto(idUsuario: 'user1', idOpcion: 'op1');
+
+      expect(resultado, ResultadoVoto.exitoso);
+    });
+
+    test('la misma votacion se abre y se cierra al avanzar el reloj', () {
+      final votacion = _crearVotacionDePrueba(fechaCierre: cierre);
+      var ahora = cierre.subtract(const Duration(hours: 1));
+      final servicio = ServicioVotacion(votacion, reloj: () => ahora);
+
+      final antes = servicio.registrarVoto(idUsuario: 'user1', idOpcion: 'op1');
+      ahora = cierre.add(const Duration(hours: 1));
+      final despues = servicio.registrarVoto(idUsuario: 'user2', idOpcion: 'op1');
+
+      expect(antes, ResultadoVoto.exitoso);
+      expect(despues, ResultadoVoto.votacionCerrada);
+      expect(votacion.opciones[0].votos, 1);
+    });
+  });
+
   // PRUEBA DE INTEGRACION — un plebiscito completo
   test('simulacion completa: varios vecinos votan y se determina un ganador', () {
     final votacion = Votacion(
