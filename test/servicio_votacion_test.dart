@@ -74,4 +74,18 @@ void main() {
 
     expect(resultados.every((r) => r.porcentaje == 0), true);
   });
+
+  // RONDA 5 — Determinar el ganador
+  test('determinarGanador regresa la opcion con mas votos', () {
+    final votacion = _crearVotacionDePrueba();
+    final servicio = ServicioVotacion(votacion);
+    servicio.registrarVoto(idUsuario: 'u1', idOpcion: 'op1');
+    servicio.registrarVoto(idUsuario: 'u2', idOpcion: 'op1');
+    servicio.registrarVoto(idUsuario: 'u3', idOpcion: 'op2');
+
+    final ganadores = servicio.determinarGanador();
+
+    expect(ganadores.length, 1);
+    expect(ganadores.first.id, 'op1');
+  });
 }
